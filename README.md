@@ -39,7 +39,8 @@ A UUPS upgradeable fee splitter smart contract for ETH and ERC20 tokens.
 Muscadine-Labs/Contracts/
 ├── contracts/          # Smart contracts
 │   ├── FeeSplitterUpgradeable.sol
-│   └── TestToken.sol
+│   └── test/
+│       └── TestToken.sol
 ├── test/              # Test suite
 │   └── FeeSplitter.test.ts
 ├── scripts/           # Deployment scripts

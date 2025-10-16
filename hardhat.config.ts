@@ -12,6 +12,10 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  paths: {
+    tests: "./test",
+    sources: "./contracts",
+  },
   networks: {
     hardhat: {
       chainId: 31337,
