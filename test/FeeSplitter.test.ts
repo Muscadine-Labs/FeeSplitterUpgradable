@@ -11,9 +11,11 @@ describe("FeeSplitterUpgradeable", function () {
   let addr2: HardhatEthersSigner;
   let stranger: HardhatEthersSigner;
 
-  const owner = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82";
-  const payee1 = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82";
-  const payee2 = "0x0D5A708B651FeE1DAA0470431c4262ab3e1D0261";
+  // NOTE: Using test owner address for testing (can impersonate in tests)
+  // Production uses multi-sig: 0x4E5D3ef790C75682ac4f6d4C1dDCc08b36fC100A
+  const owner = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82"; // Test owner (Nicholas)
+  const payee1 = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82"; // Nicholas
+  const payee2 = "0x0D5A708B651FeE1DAA0470431c4262ab3e1D0261"; // Ignas
 
   beforeEach(async function () {
     [deployer, addr1, addr2, stranger] = await ethers.getSigners();

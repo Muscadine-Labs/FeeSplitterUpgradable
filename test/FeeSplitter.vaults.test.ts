@@ -12,7 +12,9 @@ describe("FeeSplitterUpgradeable - Muscadine Vaults Integration", function () {
   let addr1: HardhatEthersSigner;
   let addr2: HardhatEthersSigner;
 
-  const owner = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82";
+  // NOTE: Using test owner address for testing (can impersonate in tests)
+  // Production uses multi-sig: 0x4E5D3ef790C75682ac4f6d4C1dDCc08b36fC100A
+  const owner = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82"; // Test owner (Nicholas)
   const nicholas = "0xD437c78a6bA1F42Dca908F3759ab8B8A42Af4D82";
   const ignas = "0x0D5A708B651FeE1DAA0470431c4262ab3e1D0261";
 
