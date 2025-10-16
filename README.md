@@ -1,6 +1,12 @@
 # Fee Splitter UUPS
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-yellow.svg)](https://hardhat.org/)
+[![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.0.2-blue.svg)](https://docs.openzeppelin.com/contracts/)
+
 A production-ready, upgradeable fee splitter smart contract for ETH and ERC20 tokens using the UUPS (Universal Upgradeable Proxy Standard) pattern.
+
+> **Built with [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)** - Industry-standard secure smart contract library
 
 ## Features
 
