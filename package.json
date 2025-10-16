@@ -1,0 +1,34 @@
+{
+  "name": "fee-splitter-uups",
+  "version": "1.0.0",
+  "description": "UUPS upgradeable fee splitter for ETH and ERC20 tokens",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts",
+    "deploy:base": "hardhat run scripts/deploy.ts --network base"
+  },
+  "keywords": ["ethereum", "solidity", "upgradeable", "uups", "fee-splitter"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "chai": "^4.4.1",
+    "ethers": "^6.10.0",
+    "hardhat": "^2.22.10",
+    "hardhat-gas-reporter": "^1.0.10",
+    "solidity-coverage": "^0.8.11",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.4.0"
+  }
+}
+
