@@ -4,57 +4,92 @@
 [![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-yellow.svg)](https://hardhat.org/)
 [![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.0.2-blue.svg)](https://docs.openzeppelin.com/contracts/)
 
-Production-ready, upgradeable smart contracts for Muscadine Labs ecosystem.
+Production-ready fee splitter smart contract for Muscadine Labs ecosystem.
 
 > **Built with [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)** - Industry-standard secure smart contract library
 
-## Contracts
+## Contract: FeeSplitterSimple
 
-### FeeSplitterUpgradeable
-
-A UUPS upgradeable fee splitter smart contract for ETH and ERC20 tokens.
+A minimal, non-upgradeable fee splitter smart contract for ETH and ERC20 tokens.
 
 **Key Features:**
-- Pull-based distribution for ETH and ERC20 tokens
-- UUPS proxy pattern for upgradeability
-- Checkpointing system for safe payee reconfiguration
-- Pausable and reentrancy-protected
+- ✅ Pull-based distribution for ETH and ERC20 tokens
+- ✅ Non-upgradeable (simplest & safest deployment)
+- ✅ SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
+- ✅ Owner can replace payees/shares only when all balances are claimed
+- ✅ Reentrancy-protected
+- ✅ ~130 lines of code (simple & auditable)
 
-### Architecture
+## Usage
 
-**Core Components:**
-1. **FeeSplitterUpgradeable.sol**: Main contract implementing the fee splitting logic
-2. **UUPS Proxy**: Allows upgrading contract logic while preserving state
-3. **Checkpoint System**: Preserves entitlements when reconfiguring payees
+### 1. Funding the Contract
+
+Simply transfer ETH or ERC20 tokens to the contract address:
+
+**ETH:**
+```solidity
+(bool ok,) = splitterAddress.call{value: amount}("");
+require(ok);
+```
+
+**ERC20:**
+```solidity
+token.transfer(splitterAddress, amount);
+```
+
+### 2. Claiming Funds (Payees)
+
+Any payee (or anyone on their behalf) can claim by calling:
+
+```solidity
+splitter.releaseETH(payeeAddress);
+splitter.releaseToken(tokenAddress, payeeAddress);
+```
+
+### 3. Reconfiguring Payees (Owner Only)
+
+Owner can change payees/shares **only when all balances are zero**:
+
+```solidity
+// First, ensure all payees have claimed everything
+// Then:
+splitter.setPayees(
+  [newPayee1, newPayee2],
+  [70, 30], // shares (70% / 30%)
+  [token1, token2] // tokens to check for zero balance
+);
+```
+
+## Architecture
+
+**Storage:**
+- `_totalShares` - Sum of all share weights
+- `_shares[address]` - Shares per payee
+- `_payees[]` - Array of payee addresses
+- `_releasedETH[address]` - ETH released per payee
+- `_releasedERC20[token][address]` - Tokens released per payee
 
 **Key Concepts:**
-- **Shares**: Each payee has a share weight (e.g., 1, 2, 3)
-- **Credits**: Checkpointed entitlements that persist through reconfiguration
+- **Shares**: Each payee has a share weight (e.g., 70, 30 for 70%/30% split)
 - **Pending**: Current unclaimed amount based on shares
-- **Released**: Historical tracking of total distributions
+- **Released**: Historical tracking to calculate pending amounts
 
 ## Repository Structure
 
 ```
-Muscadine-Labs/Contracts/
+Fee-splitter/
 ├── contracts/          # Smart contracts
-│   ├── FeeSplitterUpgradeable.sol
-│   └── test/
-│       └── TestToken.sol
+│   ├── FeeSplitterSimple.sol
+│   └── mocks/
+│       ├── ERC20Mock.sol
+│       └── DeflationaryMock.sol
 ├── test/              # Test suite
-│   └── FeeSplitter.test.ts
+│   └── FeeSplitterSimple.test.ts
 ├── scripts/           # Deployment scripts
-│   └── deploy.ts
-├── docs/              # Documentation
-│   ├── FeeSplitterUpgradeable.md
-│   ├── DEPLOYMENT.md
-│   └── README.md
-├── audits/            # Security audit reports
+│   └── deploySimple.ts
 ├── .github/workflows/ # CI/CD automation
-│   ├── test.yml
-│   └── lint.yml
+│   └── ci.yml
 ├── LICENSE            # MIT License
-├── SECURITY.md        # Security policy
 └── README.md
 ```
 
@@ -92,7 +127,7 @@ npm test
 
 **Local/Hardhat Network:**
 ```bash
-npx hardhat run scripts/deploy.ts
+npm run deploy
 ```
 
 **Base Mainnet:**
@@ -100,7 +135,7 @@ npx hardhat run scripts/deploy.ts
 npm run deploy:base
 ```
 
-After deployment, set your Morpho vault's `feeRecipient` to the proxy address.
+After deployment, you can start sending ETH and tokens to the contract address.
 
 ## Contract Interface
 
@@ -116,50 +151,31 @@ function shares(address account) external view returns (uint256)
 // Get all current payees
 function payees() external view returns (address[] memory)
 
-// Get pending ETH (includes credits)
+// Get pending ETH for a payee
 function pendingETH(address account) public view returns (uint256)
 
-// Get pending tokens (includes credits)
+// Get pending tokens for a payee
 function pendingToken(IERC20 token, address account) public view returns (uint256)
-
-// Get ETH credits for an account
-function creditETH(address account) external view returns (uint256)
-
-// Get token credits for an account
-function creditToken(IERC20 token, address account) external view returns (uint256)
 ```
 
-### User Functions
+### Release Functions (Anyone can call)
 
 ```solidity
 // Release ETH to a payee
-function releaseETH(address payable account) external
+function releaseETH(address payable account) external nonReentrant
 
 // Release ERC20 tokens to a payee
-function releaseToken(IERC20 token, address account) external
+function releaseToken(IERC20 token, address account) external nonReentrant
 ```
 
 ### Owner Functions
 
 ```solidity
-// Pause all distributions
-function pause() external onlyOwner
-
-// Unpause distributions
-function unpause() external onlyOwner
-
-// Reconfigure payees after all funds are claimed
-function resetPayees(
+// Replace payees/shares (only when all balances are zero)
+function setPayees(
     address[] calldata newPayees,
     uint256[] calldata newShares,
-    IERC20[] calldata tokens
-) external onlyOwner
-
-// Checkpoint current payees and reconfigure (preserves credits)
-function checkpointAndReconfigure(
-    address[] calldata newPayees,
-    uint256[] calldata newShares,
-    IERC20[] calldata tokens
+    IERC20[] calldata tokensToCheck
 ) external onlyOwner
 ```
 
@@ -169,13 +185,13 @@ function checkpointAndReconfigure(
 
 ```typescript
 const splitterAddress = "0x...";
-const splitter = await ethers.getContractAt("FeeSplitterUpgradeable", splitterAddress);
+const splitter = await ethers.getContractAt("FeeSplitterSimple", splitterAddress);
 
 // Check pending amount
 const pending = await splitter.pendingETH(myAddress);
 console.log("Pending ETH:", ethers.formatEther(pending));
 
-// Release to yourself
+// Release (anyone can call for any payee)
 await splitter.releaseETH(myAddress);
 ```
 
@@ -192,34 +208,30 @@ console.log("Pending tokens:", ethers.formatUnits(pending, 6)); // USDC has 6 de
 await splitter.releaseToken(tokenAddress, myAddress);
 ```
 
-### Reconfiguring Payees (Owner)
-
-**Option 1: After all funds are claimed**
+### Reconfiguring Payees (Owner Only)
 
 ```typescript
-// Ensure all payees have claimed everything first
-await splitter.resetPayees(
-    ["0x123...", "0x456..."],  // new payees
-    [3, 1],                     // new shares (75/25 split)
-    ["0xUSDC...", "0xAERO..."]  // tokens to verify are empty
+// Step 1: Ensure ALL payees have claimed ALL balances
+const payees = await splitter.payees();
+for (const payee of payees) {
+  const ethPending = await splitter.pendingETH(payee);
+  const usdcPending = await splitter.pendingToken(usdcAddress, payee);
+  
+  if (ethPending > 0n) {
+    await splitter.releaseETH(payee);
+  }
+  if (usdcPending > 0n) {
+    await splitter.releaseToken(usdcAddress, payee);
+  }
+}
+
+// Step 2: Reconfigure with new payees
+await splitter.setPayees(
+  [newPayee1, newPayee2, newPayee3],
+  [40, 30, 30], // 40/30/30 split
+  [usdcAddress, wethAddress] // tokens to check for zero balance
 );
 ```
-
-**Option 2: With checkpointing (funds can remain unclaimed)**
-
-```typescript
-// Preserves old payees' credits, reconfigures for new funds
-// This calculates all credits atomically before updating state
-await splitter.checkpointAndReconfigure(
-    ["0x789...", "0xabc..."],  // new payees
-    [1, 1],                     // new shares (50/50 split)
-    ["0xUSDC...", "0xAERO..."]  // tokens to checkpoint
-);
-
-// Old payees can still claim their checkpointed credits
-```
-
-**Important:** The `checkpointAndReconfigure` function calculates all pending amounts atomically before updating any state, ensuring fair and accurate credit distribution.
 
 ## Share Distribution Examples
 
@@ -233,38 +245,24 @@ The shares are relative weights, not percentages.
 ## Security Features
 
 1. **Reentrancy Guard**: Prevents reentrancy attacks on fund releases
-2. **Pausable**: Owner can pause in case of emergency
-3. **Two-Step Ownership**: Prevents accidental ownership transfer
-4. **UUPS Authorization**: Only owner can upgrade
-5. **Checkpoint Credits**: Prevents loss of funds during reconfiguration
-
-## Upgrading
-
-To upgrade the contract implementation:
-
-```typescript
-const SplitterV2 = await ethers.getContractFactory("FeeSplitterUpgradeableV2");
-const upgraded = await upgrades.upgradeProxy(proxyAddress, SplitterV2);
-await upgraded.waitForDeployment();
-```
+2. **SafeERC20**: Handles non-standard tokens and prevents silent failures
+3. **Actual-Sent Accounting**: Correctly tracks deflationary/fee-on-transfer tokens
+4. **Two-Step Ownership**: Prevents accidental ownership transfer
+5. **Clean State Requirement**: Prevents loss of funds during reconfiguration
+6. **Duplicate Prevention**: Rejects duplicate addresses in payee lists
 
 ## Testing
 
 The test suite covers:
-- Basic ETH and ERC20 distribution
-- Pause/unpause functionality
-- Payee reconfiguration (both methods)
-- Checkpointing system
-- Multiple releases
+- ETH and ERC20 distribution (70/30 split)
+- Deflationary token handling (1% burn)
+- Payee reconfiguration with validation
+- Duplicate address prevention
+- Owner-only access control
 - Edge cases and error handling
 
 ```bash
 npm test
-```
-
-For gas reporting:
-```bash
-REPORT_GAS=true npm test
 ```
 
 For coverage:
@@ -272,73 +270,23 @@ For coverage:
 npm run test:coverage
 ```
 
-## Code Quality
+## License
 
-### Linting
+MIT - see LICENSE file for details
 
-```bash
-# Check for issues
-npm run lint
+## Security
 
-# Auto-fix issues
-npm run lint:fix
-```
-
-### Formatting
-
-```bash
-# Format code
-npm run format
-
-# Check formatting
-npm run format:check
-```
-
-## Continuous Integration
-
-This repository uses GitHub Actions for automated testing and linting on every push and pull request.
-
-- ✅ **Test workflow**: Runs tests on Node 18.x and 20.x
-- ✅ **Lint workflow**: Checks code quality with Solhint and Prettier
-
-## Integration with Morpho
-
-1. Deploy the FeeSplitter contract
-2. Set the proxy address as the `feeRecipient` in your Morpho vault
-3. Fees will automatically accumulate in the splitter
-4. Payees can claim their share anytime by calling `releaseETH()` or `releaseToken()`
-
-## Documentation
-
-- [FeeSplitterUpgradeable Technical Docs](./docs/FeeSplitterUpgradeable.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
-- [Security Policy](./SECURITY.md)
-
-## Audits
-
-Security audit reports are located in the [audits/](./audits/) directory.
+See [SECURITY.md](SECURITY.md) for security policy and vulnerability reporting.
 
 ## Contributing
 
-We welcome contributions! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
-
-## License
-
-MIT License - see [LICENSE](./LICENSE) for details.
+Contributions are welcome! Please ensure:
+- All tests pass
+- Code is properly formatted
+- New features include tests
+- Changes are documented
 
 ## Support
 
-For questions or support, please open an issue on GitHub.
-
----
-
-**Built with ❤️ by Muscadine Labs**
-
-*Production-ready smart contracts for the DeFi ecosystem*
+For issues or questions, please open an issue on GitHub.
 
