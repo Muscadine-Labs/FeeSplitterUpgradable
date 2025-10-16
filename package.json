@@ -1,7 +1,7 @@
 {
-  "name": "fee-splitter-uups",
+  "name": "@muscadine-labs/contracts",
   "version": "1.0.0",
-  "description": "UUPS upgradeable fee splitter for ETH and ERC20 tokens",
+  "description": "Muscadine Labs Smart Contracts - Production-ready, upgradeable smart contracts",
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",

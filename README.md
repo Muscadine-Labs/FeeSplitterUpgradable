@@ -1,33 +1,33 @@
-# Fee Splitter UUPS
+# Muscadine Labs Contracts
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-yellow.svg)](https://hardhat.org/)
 [![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.0.2-blue.svg)](https://docs.openzeppelin.com/contracts/)
 
-A production-ready, upgradeable fee splitter smart contract for ETH and ERC20 tokens using the UUPS (Universal Upgradeable Proxy Standard) pattern.
+Production-ready, upgradeable smart contracts for Muscadine Labs ecosystem.
 
 > **Built with [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)** - Industry-standard secure smart contract library
 
-## Features
+## Contracts
 
-- **Pull-based distribution**: Payees claim their share when ready (gas-efficient)
-- **Multi-asset support**: Handles ETH and any ERC20 token
-- **Upgradeable**: UUPS proxy pattern allows contract logic upgrades
-- **Checkpointing**: Reconfigure payees without forcing withdrawals
-- **Pausable**: Owner can pause/unpause distributions
-- **Reentrancy protection**: Safe against reentrancy attacks
-- **Two-step ownership**: Secure ownership transfer process
+### FeeSplitterUpgradeable
 
-## Architecture
+A UUPS upgradeable fee splitter smart contract for ETH and ERC20 tokens.
 
-### Core Components
+**Key Features:**
+- Pull-based distribution for ETH and ERC20 tokens
+- UUPS proxy pattern for upgradeability
+- Checkpointing system for safe payee reconfiguration
+- Pausable and reentrancy-protected
 
+### Architecture
+
+**Core Components:**
 1. **FeeSplitterUpgradeable.sol**: Main contract implementing the fee splitting logic
 2. **UUPS Proxy**: Allows upgrading contract logic while preserving state
 3. **Checkpoint System**: Preserves entitlements when reconfiguring payees
 
-### Key Concepts
-
+**Key Concepts:**
 - **Shares**: Each payee has a share weight (e.g., 1, 2, 3)
 - **Credits**: Checkpointed entitlements that persist through reconfiguration
 - **Pending**: Current unclaimed amount based on shares
