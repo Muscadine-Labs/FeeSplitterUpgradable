@@ -33,6 +33,30 @@ A UUPS upgradeable fee splitter smart contract for ETH and ERC20 tokens.
 - **Pending**: Current unclaimed amount based on shares
 - **Released**: Historical tracking of total distributions
 
+## Repository Structure
+
+```
+Muscadine-Labs/Contracts/
+├── contracts/          # Smart contracts
+│   ├── FeeSplitterUpgradeable.sol
+│   └── TestToken.sol
+├── test/              # Test suite
+│   └── FeeSplitter.test.ts
+├── scripts/           # Deployment scripts
+│   └── deploy.ts
+├── docs/              # Documentation
+│   ├── FeeSplitterUpgradeable.md
+│   ├── DEPLOYMENT.md
+│   └── README.md
+├── audits/            # Security audit reports
+├── .github/workflows/ # CI/CD automation
+│   ├── test.yml
+│   └── lint.yml
+├── LICENSE            # MIT License
+├── SECURITY.md        # Security policy
+└── README.md
+```
+
 ## Installation
 
 ```bash
@@ -242,6 +266,40 @@ For gas reporting:
 REPORT_GAS=true npm test
 ```
 
+For coverage:
+```bash
+npm run test:coverage
+```
+
+## Code Quality
+
+### Linting
+
+```bash
+# Check for issues
+npm run lint
+
+# Auto-fix issues
+npm run lint:fix
+```
+
+### Formatting
+
+```bash
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+```
+
+## Continuous Integration
+
+This repository uses GitHub Actions for automated testing and linting on every push and pull request.
+
+- ✅ **Test workflow**: Runs tests on Node 18.x and 20.x
+- ✅ **Lint workflow**: Checks code quality with Solhint and Prettier
+
 ## Integration with Morpho
 
 1. Deploy the FeeSplitter contract
@@ -249,11 +307,37 @@ REPORT_GAS=true npm test
 3. Fees will automatically accumulate in the splitter
 4. Payees can claim their share anytime by calling `releaseETH()` or `releaseToken()`
 
+## Documentation
+
+- [FeeSplitterUpgradeable Technical Docs](./docs/FeeSplitterUpgradeable.md)
+- [Deployment Guide](./docs/DEPLOYMENT.md)
+- [Security Policy](./SECURITY.md)
+
+## Audits
+
+Security audit reports are located in the [audits/](./audits/) directory.
+
+## Contributing
+
+We welcome contributions! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
 ## License
 
-MIT
+MIT License - see [LICENSE](./LICENSE) for details.
 
-## Author
+## Support
 
-Built for secure, flexible fee distribution on Base and EVM-compatible chains.
+For questions or support, please open an issue on GitHub.
+
+---
+
+**Built with ❤️ by Muscadine Labs**
+
+*Production-ready smart contracts for the DeFi ecosystem*
 
