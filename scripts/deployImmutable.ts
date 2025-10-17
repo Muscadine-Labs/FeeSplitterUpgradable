@@ -43,8 +43,8 @@ async function main() {
   console.log("Payee 1:", await splitter.PAYEE1());
   console.log("Payee 2:", await splitter.PAYEE2());
   console.log("Total shares:", await splitter.TOTAL_SHARES());
-  console.log("Nick's shares:", await splitter.shares(NICK));
-  console.log("Ignas's shares:", await splitter.shares(IGNAS));
+  console.log("Nick's shares:", await splitter.SHARES1());
+  console.log("Ignas's shares:", await splitter.SHARES2());
 
   console.log("\n=== IMPORTANT ===");
   console.log("This contract is FULLY IMMUTABLE:");

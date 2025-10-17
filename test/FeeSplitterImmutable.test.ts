@@ -44,8 +44,8 @@ describe("ERC20FeeSplitter", function () {
     it("should set correct payees and shares (immutable)", async function () {
       expect(await splitter.PAYEE1()).to.equal(NICK_ADDRESS);
       expect(await splitter.PAYEE2()).to.equal(IGNAS_ADDRESS);
-      expect(await splitter.shares(NICK_ADDRESS)).to.equal(1);
-      expect(await splitter.shares(IGNAS_ADDRESS)).to.equal(1);
+      expect(await splitter.SHARES1()).to.equal(1);
+      expect(await splitter.SHARES2()).to.equal(1);
       expect(await splitter.TOTAL_SHARES()).to.equal(2);
     });
 

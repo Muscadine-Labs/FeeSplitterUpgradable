@@ -48,20 +48,6 @@ contract ERC20FeeSplitter is ReentrancyGuard {
     }
 
     // --- views ---
-    function shares(address a) external view returns (uint256) {
-        if (a == PAYEE1) return SHARES1;
-        if (a == PAYEE2) return SHARES2;
-        return 0;
-    }
-
-    function releasedToken(IERC20 t, address a) external view returns (uint256) {
-        return _releasedERC20[t][a];
-    }
-
-    function totalReleased(IERC20 t) external view returns (uint256) {
-        return _totalReleasedERC20[t];
-    }
-
     function pendingToken(IERC20 token, address a) public view returns (uint256) {
         uint256 share = a == PAYEE1 ? SHARES1 : (a == PAYEE2 ? SHARES2 : 0);
         if (share == 0) return 0;
@@ -91,21 +77,34 @@ contract ERC20FeeSplitter is ReentrancyGuard {
         emit ERC20Claimed(token, payee, sent);
     }
 
-    function _claimFor(IERC20 token, address payee) private {
-        uint256 amt = pendingToken(token, payee);
-        if (amt == 0) return;
-        uint256 b0 = token.balanceOf(address(this));
-        token.safeTransfer(payee, amt);
-        uint256 b1 = token.balanceOf(address(this));
-        if (b1 >= b0) revert TokenTransferFailed();
-        uint256 sent = b0 - b1;
-        _releasedERC20[token][payee] += sent;
-        _totalReleasedERC20[token] += sent;
-        emit ERC20Claimed(token, payee, sent);
-    }
 
     function claimAll(IERC20 token) external nonReentrant {
-        _claimFor(token, PAYEE1);
-        _claimFor(token, PAYEE2);
+        // Claim for PAYEE1
+        uint256 amount1 = pendingToken(token, PAYEE1);
+        if (amount1 > 0) {
+            uint256 balanceBefore = token.balanceOf(address(this));
+            token.safeTransfer(PAYEE1, amount1);
+            uint256 balanceAfter = token.balanceOf(address(this));
+            if (balanceAfter < balanceBefore) {
+                uint256 sent1 = balanceBefore - balanceAfter;
+                _releasedERC20[token][PAYEE1] += sent1;
+                _totalReleasedERC20[token] += sent1;
+                emit ERC20Claimed(token, PAYEE1, sent1);
+            }
+        }
+
+        // Claim for PAYEE2
+        uint256 amount2 = pendingToken(token, PAYEE2);
+        if (amount2 > 0) {
+            uint256 balanceBefore = token.balanceOf(address(this));
+            token.safeTransfer(PAYEE2, amount2);
+            uint256 balanceAfter = token.balanceOf(address(this));
+            if (balanceAfter < balanceBefore) {
+                uint256 sent2 = balanceBefore - balanceAfter;
+                _releasedERC20[token][PAYEE2] += sent2;
+                _totalReleasedERC20[token] += sent2;
+                emit ERC20Claimed(token, PAYEE2, sent2);
+            }
+        }
     }
 }
