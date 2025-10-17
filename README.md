@@ -10,16 +10,15 @@ Production-ready fee splitter smart contract for Muscadine Labs ecosystem.
 
 ## Contract: FeeSplitterImmutable
 
-The **simplest possible** fee splitter smart contract for ETH and ERC20 tokens.
+Fee splitter smart contract for ETH, ERC20 tokens, and Morpho vault fee redemption.
 
 **Key Features:**
 - Pull-based distribution for ETH and ERC20 tokens
 - **Fully immutable** - NO owner, NO configuration changes, EVER
 - **Fixed 50/50 split** between Nick and Ignas (permanent)
+- Morpho vault fee claiming via ERC-4626 interface
 - SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
 - Reentrancy-protected
-- **Only 110 lines of code** (ultra-simple & auditable)
-- **Lowest gas costs** - No owner logic, minimal storage
 
 ## Usage
 
@@ -47,7 +46,17 @@ splitter.releaseETH(payeeAddress);
 splitter.releaseToken(tokenAddress, payeeAddress);
 ```
 
-### ⚠️ No Configuration Changes
+### 3. Vault Fee Redemption
+
+Anyone can redeem Morpho vault fees and route underlying assets to the splitter:
+
+```solidity
+splitter.claimAllVaultFees(vaultAddress);
+splitter.claimVaultFeesUpToLimit(vaultAddress);
+splitter.claimExactVaultAssets(vaultAddress, assetsAmount);
+```
+
+###  No Configuration Changes
 
 **This contract is FULLY IMMUTABLE:**
 - No owner (no one controls it)
@@ -61,11 +70,11 @@ splitter.releaseToken(tokenAddress, payeeAddress);
 ## Architecture
 
 **Immutable Storage:**
-- `_payee1` - Nick's address (immutable)
-- `_payee2` - Ignas's address (immutable)
-- `_shares1` - Nick's shares = 1 (immutable)
-- `_shares2` - Ignas's shares = 1 (immutable)
-- `_totalShares` - Total = 2 (immutable)
+- `_PAYEE1` - Nick's address (immutable)
+- `_PAYEE2` - Ignas's address (immutable)
+- `_SHARES1` - Nick's shares = 1 (immutable)
+- `_SHARES2` - Ignas's shares = 1 (immutable)
+- `_TOTAL_SHARES` - Total = 2 (immutable)
 
 **Mutable Accounting:**
 - `_releasedETH[address]` - ETH released per payee
@@ -166,7 +175,7 @@ function pendingETH(address account) public view returns (uint256)
 function pendingToken(IERC20 token, address account) public view returns (uint256)
 ```
 
-### Release Functions (Anyone can call for payees only)
+### Release Functions
 
 ```solidity
 // Release ETH to a payee (must be payee1 or payee2)
@@ -174,6 +183,19 @@ function releaseETH(address payable account) external nonReentrant
 
 // Release ERC20 tokens to a payee (must be payee1 or payee2)
 function releaseToken(IERC20 token, address account) external nonReentrant
+```
+
+### Vault Functions
+
+```solidity
+// Redeem all vault shares for underlying assets
+function claimAllVaultFees(address vault) external nonReentrant returns (uint256 assetsOut)
+
+// Redeem vault shares respecting withdrawal limits
+function claimVaultFeesUpToLimit(address vault) external nonReentrant returns (uint256 sharesBurned, uint256 assetsOut)
+
+// Redeem specific amount of underlying assets
+function claimExactVaultAssets(address vault, uint256 assets) external nonReentrant returns (uint256 sharesBurned, uint256 assetsOut)
 ```
 
 ### No Owner Functions
@@ -237,6 +259,7 @@ The shares are relative weights, not percentages.
 
 The test suite covers:
 - ETH and ERC20 distribution (50/50 split)
+- Morpho vault fee claiming and redemption
 - All three Morpho vault tokens (USDC 6 decimals, cbBTC 8 decimals, WETH 18 decimals)
 - Deflationary token handling (1% burn)
 - Immutability verification (no owner, no setPayees, no pause)
