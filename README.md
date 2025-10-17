@@ -8,15 +8,15 @@ Production-ready fee splitter smart contract for Muscadine Labs ecosystem.
 
 > **Built with [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)** - Industry-standard secure smart contract library
 
-## Contract: FeeSplitterImmutable
+## Contract: ERC20FeeSplitter
 
-Fee splitter smart contract for ETH, ERC20 tokens, and Morpho vault fee redemption.
+Ultra-minimal fee splitter smart contract for ERC20 tokens only.
 
 **Key Features:**
-- Pull-based distribution for ETH and ERC20 tokens
+- Pull-based distribution for ERC20 tokens only
 - **Fully immutable** - NO owner, NO configuration changes, EVER
 - **Fixed 50/50 split** between Nick and Ignas (permanent)
-- Morpho vault fee claiming via ERC-4626 interface
+- Supports any ERC20 token including vault share tokens (e.g., Morpho vault shares)
 - SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
 - Reentrancy-protected
 
@@ -24,15 +24,8 @@ Fee splitter smart contract for ETH, ERC20 tokens, and Morpho vault fee redempti
 
 ### 1. Funding the Contract
 
-Simply transfer ETH or ERC20 tokens to the contract address:
+Simply transfer ERC20 tokens to the contract address:
 
-**ETH:**
-```solidity
-(bool ok,) = splitterAddress.call{value: amount}("");
-require(ok);
-```
-
-**ERC20:**
 ```solidity
 token.transfer(splitterAddress, amount);
 ```
@@ -42,21 +35,18 @@ token.transfer(splitterAddress, amount);
 Nick or Ignas (or anyone on their behalf) can claim by calling:
 
 ```solidity
-splitter.releaseETH(payeeAddress);
-splitter.releaseToken(tokenAddress, payeeAddress);
+splitter.claim(tokenAddress, payeeAddress);
 ```
 
-### 3. Vault Fee Redemption
+### 3. Claiming for Both Payees
 
-Anyone can redeem Morpho vault fees and route underlying assets to the splitter:
+Anyone can claim for both payees in one transaction:
 
 ```solidity
-splitter.claimAllVaultFees(vaultAddress);
-splitter.claimVaultFeesUpToLimit(vaultAddress);
-splitter.claimExactVaultAssets(vaultAddress, assetsAmount);
+splitter.claimAll(tokenAddress);
 ```
 
-###  No Configuration Changes
+### 4. No Configuration Changes
 
 **This contract is FULLY IMMUTABLE:**
 - No owner (no one controls it)

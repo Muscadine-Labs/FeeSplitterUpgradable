@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { FeeSplitterImmutable, ERC20Mock, DeflationaryMock } from "../typechain-types";
+import { ERC20FeeSplitter, ERC20Mock, DeflationaryMock } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("FeeSplitterImmutable", function () {
-  let splitter: FeeSplitterImmutable;
+describe("ERC20FeeSplitter", function () {
+  let splitter: ERC20FeeSplitter;
   let usdc: ERC20Mock;
   let cbbtc: ERC20Mock;
   let weth: ERC20Mock;
@@ -20,8 +20,8 @@ describe("FeeSplitterImmutable", function () {
   beforeEach(async function () {
     [deployer, nick, ignas, stranger] = await ethers.getSigners();
 
-    // Deploy FeeSplitterImmutable with FIXED configuration
-    const Splitter = await ethers.getContractFactory("FeeSplitterImmutable");
+    // Deploy ERC20FeeSplitter with FIXED configuration
+    const Splitter = await ethers.getContractFactory("ERC20FeeSplitter");
     splitter = await Splitter.deploy(
       NICK_ADDRESS, // payee1
       IGNAS_ADDRESS, // payee2
@@ -42,11 +42,11 @@ describe("FeeSplitterImmutable", function () {
 
   describe("Deployment", function () {
     it("should set correct payees and shares (immutable)", async function () {
-      expect(await splitter.payee1()).to.equal(NICK_ADDRESS);
-      expect(await splitter.payee2()).to.equal(IGNAS_ADDRESS);
+      expect(await splitter.PAYEE1()).to.equal(NICK_ADDRESS);
+      expect(await splitter.PAYEE2()).to.equal(IGNAS_ADDRESS);
       expect(await splitter.shares(NICK_ADDRESS)).to.equal(1);
       expect(await splitter.shares(IGNAS_ADDRESS)).to.equal(1);
-      expect(await splitter.totalShares()).to.equal(2);
+      expect(await splitter.TOTAL_SHARES()).to.equal(2);
     });
 
     it("should have no owner (fully immutable)", async function () {
@@ -56,46 +56,6 @@ describe("FeeSplitterImmutable", function () {
     });
   });
 
-  describe("ETH Distribution", function () {
-    it("should split ETH 50/50", async function () {
-      const amount = ethers.parseEther("10");
-
-      await deployer.sendTransaction({
-        to: await splitter.getAddress(),
-        value: amount,
-      });
-
-      expect(await splitter.pendingETH(NICK_ADDRESS)).to.equal(ethers.parseEther("5"));
-      expect(await splitter.pendingETH(IGNAS_ADDRESS)).to.equal(ethers.parseEther("5"));
-    });
-
-    it("should allow both payees to claim ETH", async function () {
-      const amount = ethers.parseEther("10");
-
-      await deployer.sendTransaction({
-        to: await splitter.getAddress(),
-        value: amount,
-      });
-
-      // Impersonate payees
-      await ethers.provider.send("hardhat_impersonateAccount", [NICK_ADDRESS]);
-      await ethers.provider.send("hardhat_impersonateAccount", [IGNAS_ADDRESS]);
-
-      const nickSigner = await ethers.getSigner(NICK_ADDRESS);
-      const ignasSigner = await ethers.getSigner(IGNAS_ADDRESS);
-
-      // Fund for gas
-      await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
-      await deployer.sendTransaction({ to: IGNAS_ADDRESS, value: ethers.parseEther("1") });
-
-      // Claim
-      await splitter.connect(nickSigner).releaseETH(NICK_ADDRESS);
-      await splitter.connect(ignasSigner).releaseETH(IGNAS_ADDRESS);
-
-      expect(await splitter.pendingETH(NICK_ADDRESS)).to.equal(0);
-      expect(await splitter.pendingETH(IGNAS_ADDRESS)).to.equal(0);
-    });
-  });
 
   describe("Vault Tokens", function () {
     it("should split USDC vault fees 50/50", async function () {
@@ -178,7 +138,7 @@ describe("FeeSplitterImmutable", function () {
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
-      await splitter.connect(nickSigner).releaseToken(await deflToken.getAddress(), NICK_ADDRESS);
+      await splitter.connect(nickSigner).claim(await deflToken.getAddress(), NICK_ADDRESS);
 
       const balance = await deflToken.balanceOf(NICK_ADDRESS);
       expect(balance).to.be.closeTo(ethers.parseUnits("490.05", 18), ethers.parseUnits("0.01", 18));
@@ -202,47 +162,42 @@ describe("FeeSplitterImmutable", function () {
     });
 
     it("should reject non-payee from claiming", async function () {
-      await deployer.sendTransaction({
-        to: await splitter.getAddress(),
-        value: ethers.parseEther("1"),
-      });
-
       await expect(
-        splitter.connect(stranger).releaseETH(await stranger.getAddress()),
+        splitter.connect(stranger).claim(await usdc.getAddress(), await stranger.getAddress()),
       ).to.be.revertedWithCustomError(splitter, "NotPayee");
     });
   });
 
   describe("Edge Cases", function () {
-    it("should revert when releasing with nothing due", async function () {
+    it("should revert when claiming with nothing due", async function () {
       await ethers.provider.send("hardhat_impersonateAccount", [NICK_ADDRESS]);
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
       await expect(
-        splitter.connect(nickSigner).releaseETH(NICK_ADDRESS),
+        splitter.connect(nickSigner).claim(await usdc.getAddress(), NICK_ADDRESS),
       ).to.be.revertedWithCustomError(splitter, "NothingDue");
     });
 
-    it("should handle multiple releases correctly", async function () {
-      await deployer.sendTransaction({
-        to: await splitter.getAddress(),
-        value: ethers.parseEther("2"),
-      });
+    it("should handle multiple claims correctly", async function () {
+      // Send some USDC to the contract
+      const amount1 = ethers.parseUnits("1000", 6);
+      await usdc.mint(await deployer.getAddress(), amount1);
+      await usdc.transfer(await splitter.getAddress(), amount1);
 
       await ethers.provider.send("hardhat_impersonateAccount", [NICK_ADDRESS]);
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
-      await splitter.connect(nickSigner).releaseETH(NICK_ADDRESS);
-      expect(await splitter.pendingETH(NICK_ADDRESS)).to.equal(0);
+      await splitter.connect(nickSigner).claim(await usdc.getAddress(), NICK_ADDRESS);
+      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS)).to.equal(0);
 
-      await deployer.sendTransaction({
-        to: await splitter.getAddress(),
-        value: ethers.parseEther("4"),
-      });
+      // Send more USDC to the contract
+      const amount2 = ethers.parseUnits("2000", 6);
+      await usdc.mint(await deployer.getAddress(), amount2);
+      await usdc.transfer(await splitter.getAddress(), amount2);
 
-      expect(await splitter.pendingETH(NICK_ADDRESS)).to.equal(ethers.parseEther("2"));
+      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS)).to.equal(amount2 / 2n);
     });
   });
 });

@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { FeeSplitterImmutable, ERC20Mock } from "../typechain-types";
+import { ERC20FeeSplitter, ERC20Mock } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
-  let splitter: FeeSplitterImmutable;
+describe("ERC20FeeSplitter - Vault Token Compatibility", function () {
+  let splitter: ERC20FeeSplitter;
   let usdc: ERC20Mock;
   let cbbtc: ERC20Mock;
   let weth: ERC20Mock;
@@ -15,8 +15,8 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
   beforeEach(async function () {
     [owner, nick, ignas] = await ethers.getSigners();
 
-    // Deploy FeeSplitterImmutable with 50/50 split
-    const Splitter = await ethers.getContractFactory("FeeSplitterImmutable");
+    // Deploy ERC20FeeSplitter with 50/50 split
+    const Splitter = await ethers.getContractFactory("ERC20FeeSplitter");
     splitter = await Splitter.deploy(
       await nick.getAddress(), // payee1
       await ignas.getAddress(), // payee2
@@ -90,8 +90,8 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
       await usdc.mint(await owner.getAddress(), amount);
       await usdc.transfer(await splitter.getAddress(), amount);
 
-      await splitter.connect(nick).releaseToken(await usdc.getAddress(), await nick.getAddress());
-      await splitter.connect(ignas).releaseToken(await usdc.getAddress(), await ignas.getAddress());
+      await splitter.connect(nick).claim(await usdc.getAddress(), await nick.getAddress());
+      await splitter.connect(ignas).claim(await usdc.getAddress(), await ignas.getAddress());
 
       expect(await usdc.balanceOf(await nick.getAddress())).to.equal(ethers.parseUnits("500", 6));
       expect(await usdc.balanceOf(await ignas.getAddress())).to.equal(ethers.parseUnits("500", 6));
@@ -231,9 +231,9 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
       await weth.transfer(await splitter.getAddress(), ethers.parseUnits("1", 18));
 
       // Nick claims all
-      await splitter.connect(nick).releaseToken(await usdc.getAddress(), await nick.getAddress());
-      await splitter.connect(nick).releaseToken(await cbbtc.getAddress(), await nick.getAddress());
-      await splitter.connect(nick).releaseToken(await weth.getAddress(), await nick.getAddress());
+      await splitter.connect(nick).claim(await usdc.getAddress(), await nick.getAddress());
+      await splitter.connect(nick).claim(await cbbtc.getAddress(), await nick.getAddress());
+      await splitter.connect(nick).claim(await weth.getAddress(), await nick.getAddress());
 
       // Verify balances
       expect(await usdc.balanceOf(await nick.getAddress())).to.equal(ethers.parseUnits("50", 6));

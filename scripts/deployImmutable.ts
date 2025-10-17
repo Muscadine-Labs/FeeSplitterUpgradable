@@ -1,14 +1,14 @@
 import { ethers } from "hardhat";
 
 /**
- * Deploy FeeSplitterImmutable - Fully immutable, no owner, no configuration changes
+ * Deploy ERC20FeeSplitter - Fully immutable, no owner, no configuration changes
  *
  * IMPORTANT: Configuration is PERMANENT and CANNOT be changed after deployment!
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  console.log("Deploying FeeSplitterImmutable with account:", deployer.address);
+  console.log("Deploying ERC20FeeSplitter with account:", deployer.address);
   console.log(
     "Account balance:",
     ethers.formatEther(await ethers.provider.getBalance(deployer.address)),
@@ -27,7 +27,7 @@ async function main() {
   console.log("Shares:", SHARES);
 
   // Deploy
-  const FeeSplitter = await ethers.getContractFactory("FeeSplitterImmutable");
+  const FeeSplitter = await ethers.getContractFactory("ERC20FeeSplitter");
 
   console.log("\nDeploying immutable contract...");
   const splitter = await FeeSplitter.deploy(NICK, IGNAS, SHARES[0], SHARES[1]);
@@ -40,9 +40,9 @@ async function main() {
 
   // Verify configuration
   console.log("\n=== Configuration Verification ===");
-  console.log("Payee 1:", await splitter.payee1());
-  console.log("Payee 2:", await splitter.payee2());
-  console.log("Total shares:", await splitter.totalShares());
+  console.log("Payee 1:", await splitter.PAYEE1());
+  console.log("Payee 2:", await splitter.PAYEE2());
+  console.log("Total shares:", await splitter.TOTAL_SHARES());
   console.log("Nick's shares:", await splitter.shares(NICK));
   console.log("Ignas's shares:", await splitter.shares(IGNAS));
 
@@ -83,7 +83,8 @@ async function main() {
   };
 
   console.log("\n=== Deployment Info (SAVE THIS) ===");
-  console.log(JSON.stringify(deploymentInfo, null, 2));
+  console.log(JSON.stringify(deploymentInfo, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value, 2));
 }
 
 main()
