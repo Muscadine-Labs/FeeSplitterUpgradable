@@ -8,17 +8,18 @@ Production-ready fee splitter smart contract for Muscadine Labs ecosystem.
 
 > **Built with [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)** - Industry-standard secure smart contract library
 
-## Contract: FeeSplitterSimple
+## Contract: FeeSplitterImmutable
 
-A minimal, non-upgradeable fee splitter smart contract for ETH and ERC20 tokens.
+The **simplest possible** fee splitter smart contract for ETH and ERC20 tokens.
 
 **Key Features:**
 - ✅ Pull-based distribution for ETH and ERC20 tokens
-- ✅ Non-upgradeable (simplest & safest deployment)
+- ✅ **Fully immutable** - NO owner, NO configuration changes, EVER
+- ✅ **Fixed 50/50 split** between Nick and Ignas (permanent)
 - ✅ SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
-- ✅ Owner can replace payees/shares only when all balances are claimed
 - ✅ Reentrancy-protected
-- ✅ ~130 lines of code (simple & auditable)
+- ✅ **Only 110 lines of code** (ultra-simple & auditable)
+- ✅ **Lowest gas costs** - No owner logic, minimal storage
 
 ## Usage
 
@@ -39,39 +40,42 @@ token.transfer(splitterAddress, amount);
 
 ### 2. Claiming Funds (Payees)
 
-Any payee (or anyone on their behalf) can claim by calling:
+Nick or Ignas (or anyone on their behalf) can claim by calling:
 
 ```solidity
 splitter.releaseETH(payeeAddress);
 splitter.releaseToken(tokenAddress, payeeAddress);
 ```
 
-### 3. Reconfiguring Payees (Owner Only)
+### ⚠️ No Configuration Changes
 
-Owner can change payees/shares **only when all balances are zero**:
+**This contract is FULLY IMMUTABLE:**
+- ❌ No owner (no one controls it)
+- ❌ Cannot change payees
+- ❌ Cannot change fee percentages
+- ❌ Cannot pause or stop
+- ✅ Configuration is PERMANENT
 
-```solidity
-// First, ensure all payees have claimed everything
-// Then:
-splitter.setPayees(
-  [newPayee1, newPayee2],
-  [70, 30], // shares (70% / 30%)
-  [token1, token2] // tokens to check for zero balance
-);
-```
+**If you need to change the split:** Deploy a new contract and update fee recipients.
 
 ## Architecture
 
-**Storage:**
-- `_totalShares` - Sum of all share weights
-- `_shares[address]` - Shares per payee
-- `_payees[]` - Array of payee addresses
+**Immutable Storage:**
+- `_payee1` - Nick's address (immutable)
+- `_payee2` - Ignas's address (immutable)
+- `_shares1` - Nick's shares = 1 (immutable)
+- `_shares2` - Ignas's shares = 1 (immutable)
+- `_totalShares` - Total = 2 (immutable)
+
+**Mutable Accounting:**
 - `_releasedETH[address]` - ETH released per payee
 - `_releasedERC20[token][address]` - Tokens released per payee
+- `_totalReleasedETH` - Total ETH released
+- `_totalReleasedERC20[token]` - Total tokens released
 
 **Key Concepts:**
-- **Shares**: Each payee has a share weight (e.g., 70, 30 for 70%/30% split)
-- **Pending**: Current unclaimed amount based on shares
+- **Immutable**: Payees and shares are locked forever at deployment
+- **Pending**: Current unclaimed amount (50% each)
 - **Released**: Historical tracking to calculate pending amounts
 
 ## Repository Structure
@@ -79,14 +83,15 @@ splitter.setPayees(
 ```
 Fee-splitter/
 ├── contracts/          # Smart contracts
-│   ├── FeeSplitterSimple.sol
+│   ├── FeeSplitterImmutable.sol
 │   └── mocks/
 │       ├── ERC20Mock.sol
 │       └── DeflationaryMock.sol
 ├── test/              # Test suite
-│   └── FeeSplitterSimple.test.ts
+│   ├── FeeSplitterImmutable.test.ts
+│   └── VaultTokens.test.ts
 ├── scripts/           # Deployment scripts
-│   └── deploySimple.ts
+│   └── deployImmutable.ts
 ├── .github/workflows/ # CI/CD automation
 │   └── ci.yml
 ├── LICENSE            # MIT License
@@ -142,14 +147,17 @@ After deployment, you can start sending ETH and tokens to the contract address.
 ### View Functions
 
 ```solidity
-// Get total shares
+// Get total shares (always 2)
 function totalShares() external view returns (uint256)
 
-// Get shares for an account
-function shares(address account) external view returns (uint256)
+// Get payee 1 (Nick's address)
+function payee1() external view returns (address)
 
-// Get all current payees
-function payees() external view returns (address[] memory)
+// Get payee 2 (Ignas's address)
+function payee2() external view returns (address)
+
+// Get shares for an address (1 for payees, 0 for others)
+function shares(address account) external view returns (uint256)
 
 // Get pending ETH for a payee
 function pendingETH(address account) public view returns (uint256)
@@ -158,79 +166,53 @@ function pendingETH(address account) public view returns (uint256)
 function pendingToken(IERC20 token, address account) public view returns (uint256)
 ```
 
-### Release Functions (Anyone can call)
+### Release Functions (Anyone can call for payees only)
 
 ```solidity
-// Release ETH to a payee
+// Release ETH to a payee (must be payee1 or payee2)
 function releaseETH(address payable account) external nonReentrant
 
-// Release ERC20 tokens to a payee
+// Release ERC20 tokens to a payee (must be payee1 or payee2)
 function releaseToken(IERC20 token, address account) external nonReentrant
 ```
 
-### Owner Functions
+### ❌ No Owner Functions
 
-```solidity
-// Replace payees/shares (only when all balances are zero)
-function setPayees(
-    address[] calldata newPayees,
-    uint256[] calldata newShares,
-    IERC20[] calldata tokensToCheck
-) external onlyOwner
-```
+**This contract has NO owner and NO admin functions:**
+- No `setPayees()` - payees are permanent
+- No `pause()` - funds can always be claimed
+- No `transferOwnership()` - there is no owner
+- No configuration changes of any kind
 
 ## Examples
 
 ### Claiming ETH
 
 ```typescript
-const splitterAddress = "0x...";
-const splitter = await ethers.getContractAt("FeeSplitterSimple", splitterAddress);
+const NICK = "0xf35B121bA32cBeaA27716abEfFb6B65a55f9B333";
+const splitterAddress = "0x..."; // Your deployed contract
+const splitter = await ethers.getContractAt("FeeSplitterImmutable", splitterAddress);
 
-// Check pending amount
-const pending = await splitter.pendingETH(myAddress);
-console.log("Pending ETH:", ethers.formatEther(pending));
+// Check Nick's pending amount
+const pending = await splitter.pendingETH(NICK);
+console.log("Nick's pending ETH:", ethers.formatEther(pending));
 
-// Release (anyone can call for any payee)
-await splitter.releaseETH(myAddress);
+// Release (anyone can call, but must be for a payee)
+await splitter.releaseETH(NICK);
 ```
 
-### Claiming ERC20 Tokens
+### Claiming ERC20 Tokens (e.g., USDC from Morpho Vault)
 
 ```typescript
-const tokenAddress = "0x..."; // e.g., USDC address
+const IGNAS = "0x0D5A708B651FeE1DAA0470431c4262ab3e1D0261";
+const usdcAddress = "0x..."; // USDC token address
 
-// Check pending tokens
-const pending = await splitter.pendingToken(tokenAddress, myAddress);
-console.log("Pending tokens:", ethers.formatUnits(pending, 6)); // USDC has 6 decimals
+// Check Ignas's pending USDC
+const pending = await splitter.pendingToken(usdcAddress, IGNAS);
+console.log("Ignas's pending USDC:", ethers.formatUnits(pending, 6)); // USDC has 6 decimals
 
-// Release tokens
-await splitter.releaseToken(tokenAddress, myAddress);
-```
-
-### Reconfiguring Payees (Owner Only)
-
-```typescript
-// Step 1: Ensure ALL payees have claimed ALL balances
-const payees = await splitter.payees();
-for (const payee of payees) {
-  const ethPending = await splitter.pendingETH(payee);
-  const usdcPending = await splitter.pendingToken(usdcAddress, payee);
-  
-  if (ethPending > 0n) {
-    await splitter.releaseETH(payee);
-  }
-  if (usdcPending > 0n) {
-    await splitter.releaseToken(usdcAddress, payee);
-  }
-}
-
-// Step 2: Reconfigure with new payees
-await splitter.setPayees(
-  [newPayee1, newPayee2, newPayee3],
-  [40, 30, 30], // 40/30/30 split
-  [usdcAddress, wethAddress] // tokens to check for zero balance
-);
+// Claim tokens
+await splitter.releaseToken(usdcAddress, IGNAS);
 ```
 
 ## Share Distribution Examples
@@ -244,22 +226,23 @@ The shares are relative weights, not percentages.
 
 ## Security Features
 
-1. **Reentrancy Guard**: Prevents reentrancy attacks on fund releases
-2. **SafeERC20**: Handles non-standard tokens and prevents silent failures
-3. **Actual-Sent Accounting**: Correctly tracks deflationary/fee-on-transfer tokens
-4. **Two-Step Ownership**: Prevents accidental ownership transfer
-5. **Clean State Requirement**: Prevents loss of funds during reconfiguration
-6. **Duplicate Prevention**: Rejects duplicate addresses in payee lists
+1. **Fully Immutable**: No owner, no upgrades, no configuration changes - maximum security
+2. **Reentrancy Guard**: Prevents reentrancy attacks on fund releases
+3. **SafeERC20**: Handles non-standard tokens and prevents silent failures
+4. **Actual-Sent Accounting**: Correctly tracks deflationary/fee-on-transfer tokens
+5. **Fixed Payees**: Only two specific addresses can claim - no one else
+6. **Minimal Attack Surface**: Only 110 lines of code, ultra-simple logic
 
 ## Testing
 
 The test suite covers:
-- ETH and ERC20 distribution (70/30 split)
+- ETH and ERC20 distribution (50/50 split)
+- All three Morpho vault tokens (USDC 6 decimals, cbBTC 8 decimals, WETH 18 decimals)
 - Deflationary token handling (1% burn)
-- Payee reconfiguration with validation
-- Duplicate address prevention
-- Owner-only access control
-- Edge cases and error handling
+- Immutability verification (no owner, no setPayees, no pause)
+- Non-payee rejection
+- Multi-vault scenarios
+- Edge cases and multiple releases
 
 ```bash
 npm test

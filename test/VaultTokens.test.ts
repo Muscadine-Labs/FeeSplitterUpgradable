@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { FeeSplitterSimple, ERC20Mock } from "../typechain-types";
+import { FeeSplitterImmutable, ERC20Mock } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("FeeSplitterSimple - Vault Token Compatibility", function () {
-  let splitter: FeeSplitterSimple;
+describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
+  let splitter: FeeSplitterImmutable;
   let usdc: ERC20Mock;
   let cbbtc: ERC20Mock;
   let weth: ERC20Mock;
@@ -15,12 +15,13 @@ describe("FeeSplitterSimple - Vault Token Compatibility", function () {
   beforeEach(async function () {
     [owner, nick, ignas] = await ethers.getSigners();
 
-    // Deploy FeeSplitterSimple with 50/50 split
-    const Splitter = await ethers.getContractFactory("FeeSplitterSimple");
+    // Deploy FeeSplitterImmutable with 50/50 split
+    const Splitter = await ethers.getContractFactory("FeeSplitterImmutable");
     splitter = await Splitter.deploy(
-      await owner.getAddress(),
-      [await nick.getAddress(), await ignas.getAddress()],
-      [1, 1] // 50/50
+      await nick.getAddress(),    // payee1
+      await ignas.getAddress(),   // payee2
+      1,                          // shares1 (50%)
+      1                           // shares2 (50%)
     );
     await splitter.waitForDeployment();
 
