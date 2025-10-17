@@ -10,11 +10,7 @@ contract DeflationaryMock is ERC20 {
     uint8 private immutable _DECIMALS;
     uint256 public constant BURN_RATE = 100; // 1% = 1/100
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals_
-    ) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, uint8 decimals_) ERC20(name, symbol) {
         _DECIMALS = decimals_;
     }
 
@@ -38,19 +34,19 @@ contract DeflationaryMock is ERC20 {
     /// @return success True if transfer succeeded
     function transfer(address to, uint256 value) public virtual override returns (bool) {
         address owner = _msgSender();
-        
+
         // Calculate burn amount (1%)
         uint256 burnAmount = value / BURN_RATE;
         uint256 transferAmount = value - burnAmount;
-        
+
         // Burn 1%
         if (burnAmount > 0) {
             _burn(owner, burnAmount);
         }
-        
+
         // Transfer remaining 99%
         _transfer(owner, to, transferAmount);
-        
+
         return true;
     }
 
@@ -63,20 +59,19 @@ contract DeflationaryMock is ERC20 {
     function transferFrom(address from, address to, uint256 value) public virtual override returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, value);
-        
+
         // Calculate burn amount (1%)
         uint256 burnAmount = value / BURN_RATE;
         uint256 transferAmount = value - burnAmount;
-        
+
         // Burn 1%
         if (burnAmount > 0) {
             _burn(from, burnAmount);
         }
-        
+
         // Transfer remaining 99%
         _transfer(from, to, transferAmount);
-        
+
         return true;
     }
 }
-
