@@ -18,24 +18,24 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
     // Deploy FeeSplitterImmutable with 50/50 split
     const Splitter = await ethers.getContractFactory("FeeSplitterImmutable");
     splitter = await Splitter.deploy(
-      await nick.getAddress(),    // payee1
-      await ignas.getAddress(),   // payee2
-      1,                          // shares1 (50%)
-      1                           // shares2 (50%)
+      await nick.getAddress(), // payee1
+      await ignas.getAddress(), // payee2
+      1, // shares1 (50%)
+      1, // shares2 (50%)
     );
     await splitter.waitForDeployment();
 
     // Deploy mock tokens with correct decimals for each vault token
     const TokenFactory = await ethers.getContractFactory("ERC20Mock");
-    
+
     // USDC - 6 decimals
     usdc = await TokenFactory.deploy("USD Coin", "USDC", 6);
     await usdc.waitForDeployment();
-    
+
     // cbBTC - 8 decimals
     cbbtc = await TokenFactory.deploy("Coinbase Wrapped BTC", "cbBTC", 8);
     await cbbtc.waitForDeployment();
-    
+
     // WETH - 18 decimals
     weth = await TokenFactory.deploy("Wrapped Ether", "WETH", 18);
     await weth.waitForDeployment();
@@ -44,12 +44,18 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
   describe("USDC (6 decimals)", function () {
     it("should split USDC 50/50 correctly", async function () {
       const amount = ethers.parseUnits("1000", 6); // 1000 USDC
-      
+
       await usdc.mint(await owner.getAddress(), amount);
       await usdc.transfer(await splitter.getAddress(), amount);
 
-      const nickPending = await splitter.pendingToken(await usdc.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await usdc.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await usdc.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await usdc.getAddress(),
+        await ignas.getAddress(),
+      );
 
       expect(nickPending).to.equal(ethers.parseUnits("500", 6));
       expect(ignasPending).to.equal(ethers.parseUnits("500", 6));
@@ -57,24 +63,30 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
 
     it("should handle small USDC amounts (vault fees)", async function () {
       const smallAmount = ethers.parseUnits("11.333333", 6); // Typical small vault fee
-      
+
       await usdc.mint(await owner.getAddress(), smallAmount);
       await usdc.transfer(await splitter.getAddress(), smallAmount);
 
-      const nickPending = await splitter.pendingToken(await usdc.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await usdc.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await usdc.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await usdc.getAddress(),
+        await ignas.getAddress(),
+      );
 
       // 50/50 split
       expect(nickPending).to.equal(ethers.parseUnits("5.666666", 6));
       expect(ignasPending).to.equal(ethers.parseUnits("5.666666", 6));
-      
+
       // Total should be very close (may have 1 wei dust due to rounding)
       expect(nickPending + ignasPending).to.be.closeTo(smallAmount, 1n);
     });
 
     it("should allow claiming USDC", async function () {
       const amount = ethers.parseUnits("1000", 6);
-      
+
       await usdc.mint(await owner.getAddress(), amount);
       await usdc.transfer(await splitter.getAddress(), amount);
 
@@ -89,12 +101,18 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
   describe("cbBTC (8 decimals)", function () {
     it("should split cbBTC 50/50 correctly", async function () {
       const amount = ethers.parseUnits("0.5", 8); // 0.5 cbBTC
-      
+
       await cbbtc.mint(await owner.getAddress(), amount);
       await cbbtc.transfer(await splitter.getAddress(), amount);
 
-      const nickPending = await splitter.pendingToken(await cbbtc.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await cbbtc.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await cbbtc.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await cbbtc.getAddress(),
+        await ignas.getAddress(),
+      );
 
       expect(nickPending).to.equal(ethers.parseUnits("0.25", 8));
       expect(ignasPending).to.equal(ethers.parseUnits("0.25", 8));
@@ -102,12 +120,18 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
 
     it("should handle precise cbBTC amounts", async function () {
       const amount = ethers.parseUnits("0.00123456", 8); // Small precise amount
-      
+
       await cbbtc.mint(await owner.getAddress(), amount);
       await cbbtc.transfer(await splitter.getAddress(), amount);
 
-      const nickPending = await splitter.pendingToken(await cbbtc.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await cbbtc.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await cbbtc.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await cbbtc.getAddress(),
+        await ignas.getAddress(),
+      );
 
       expect(nickPending).to.equal(ethers.parseUnits("0.00061728", 8));
       expect(ignasPending).to.equal(ethers.parseUnits("0.00061728", 8));
@@ -117,12 +141,18 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
   describe("WETH (18 decimals)", function () {
     it("should split WETH 50/50 correctly", async function () {
       const amount = ethers.parseUnits("10", 18); // 10 WETH
-      
+
       await weth.mint(await owner.getAddress(), amount);
       await weth.transfer(await splitter.getAddress(), amount);
 
-      const nickPending = await splitter.pendingToken(await weth.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await weth.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await weth.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await weth.getAddress(),
+        await ignas.getAddress(),
+      );
 
       expect(nickPending).to.equal(ethers.parseUnits("5", 18));
       expect(ignasPending).to.equal(ethers.parseUnits("5", 18));
@@ -130,12 +160,18 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
 
     it("should handle fractional WETH amounts", async function () {
       const amount = ethers.parseUnits("0.123456789", 18);
-      
+
       await weth.mint(await owner.getAddress(), amount);
       await weth.transfer(await splitter.getAddress(), amount);
 
-      const nickPending = await splitter.pendingToken(await weth.getAddress(), await nick.getAddress());
-      const ignasPending = await splitter.pendingToken(await weth.getAddress(), await ignas.getAddress());
+      const nickPending = await splitter.pendingToken(
+        await weth.getAddress(),
+        await nick.getAddress(),
+      );
+      const ignasPending = await splitter.pendingToken(
+        await weth.getAddress(),
+        await ignas.getAddress(),
+      );
 
       // Should split exactly 50/50
       expect(nickPending + ignasPending).to.equal(amount);
@@ -161,20 +197,26 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
       await weth.transfer(await splitter.getAddress(), wethFees);
 
       // Verify Nick's pending amounts
-      expect(await splitter.pendingToken(await usdc.getAddress(), await nick.getAddress()))
-        .to.equal(ethers.parseUnits("500", 6));
-      expect(await splitter.pendingToken(await cbbtc.getAddress(), await nick.getAddress()))
-        .to.equal(ethers.parseUnits("0.05", 8));
-      expect(await splitter.pendingToken(await weth.getAddress(), await nick.getAddress()))
-        .to.equal(ethers.parseUnits("2.5", 18));
+      expect(
+        await splitter.pendingToken(await usdc.getAddress(), await nick.getAddress()),
+      ).to.equal(ethers.parseUnits("500", 6));
+      expect(
+        await splitter.pendingToken(await cbbtc.getAddress(), await nick.getAddress()),
+      ).to.equal(ethers.parseUnits("0.05", 8));
+      expect(
+        await splitter.pendingToken(await weth.getAddress(), await nick.getAddress()),
+      ).to.equal(ethers.parseUnits("2.5", 18));
 
       // Verify Ignas's pending amounts
-      expect(await splitter.pendingToken(await usdc.getAddress(), await ignas.getAddress()))
-        .to.equal(ethers.parseUnits("500", 6));
-      expect(await splitter.pendingToken(await cbbtc.getAddress(), await ignas.getAddress()))
-        .to.equal(ethers.parseUnits("0.05", 8));
-      expect(await splitter.pendingToken(await weth.getAddress(), await ignas.getAddress()))
-        .to.equal(ethers.parseUnits("2.5", 18));
+      expect(
+        await splitter.pendingToken(await usdc.getAddress(), await ignas.getAddress()),
+      ).to.equal(ethers.parseUnits("500", 6));
+      expect(
+        await splitter.pendingToken(await cbbtc.getAddress(), await ignas.getAddress()),
+      ).to.equal(ethers.parseUnits("0.05", 8));
+      expect(
+        await splitter.pendingToken(await weth.getAddress(), await ignas.getAddress()),
+      ).to.equal(ethers.parseUnits("2.5", 18));
     });
 
     it("should allow claiming from multiple vaults", async function () {
@@ -195,7 +237,9 @@ describe("FeeSplitterImmutable - Vault Token Compatibility", function () {
 
       // Verify balances
       expect(await usdc.balanceOf(await nick.getAddress())).to.equal(ethers.parseUnits("50", 6));
-      expect(await cbbtc.balanceOf(await nick.getAddress())).to.equal(ethers.parseUnits("0.005", 8));
+      expect(await cbbtc.balanceOf(await nick.getAddress())).to.equal(
+        ethers.parseUnits("0.005", 8),
+      );
       expect(await weth.balanceOf(await nick.getAddress())).to.equal(ethers.parseUnits("0.5", 18));
     });
   });

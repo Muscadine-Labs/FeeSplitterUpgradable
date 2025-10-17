@@ -13,13 +13,13 @@ Production-ready fee splitter smart contract for Muscadine Labs ecosystem.
 The **simplest possible** fee splitter smart contract for ETH and ERC20 tokens.
 
 **Key Features:**
-- ✅ Pull-based distribution for ETH and ERC20 tokens
-- ✅ **Fully immutable** - NO owner, NO configuration changes, EVER
-- ✅ **Fixed 50/50 split** between Nick and Ignas (permanent)
-- ✅ SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
-- ✅ Reentrancy-protected
-- ✅ **Only 110 lines of code** (ultra-simple & auditable)
-- ✅ **Lowest gas costs** - No owner logic, minimal storage
+- Pull-based distribution for ETH and ERC20 tokens
+- **Fully immutable** - NO owner, NO configuration changes, EVER
+- **Fixed 50/50 split** between Nick and Ignas (permanent)
+- SafeERC20 with "actual-sent" accounting for fee-on-transfer tokens
+- Reentrancy-protected
+- **Only 110 lines of code** (ultra-simple & auditable)
+- **Lowest gas costs** - No owner logic, minimal storage
 
 ## Usage
 
@@ -50,11 +50,11 @@ splitter.releaseToken(tokenAddress, payeeAddress);
 ### ⚠️ No Configuration Changes
 
 **This contract is FULLY IMMUTABLE:**
-- ❌ No owner (no one controls it)
-- ❌ Cannot change payees
-- ❌ Cannot change fee percentages
-- ❌ Cannot pause or stop
-- ✅ Configuration is PERMANENT
+- No owner (no one controls it)
+- Cannot change payees
+- Cannot change fee percentages
+- Cannot pause or stop
+- Configuration is PERMANENT
 
 **If you need to change the split:** Deploy a new contract and update fee recipients.
 
@@ -176,7 +176,7 @@ function releaseETH(address payable account) external nonReentrant
 function releaseToken(IERC20 token, address account) external nonReentrant
 ```
 
-### ❌ No Owner Functions
+### No Owner Functions
 
 **This contract has NO owner and NO admin functions:**
 - No `setPayees()` - payees are permanent

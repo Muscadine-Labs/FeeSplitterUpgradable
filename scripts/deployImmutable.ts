@@ -2,14 +2,18 @@ import { ethers } from "hardhat";
 
 /**
  * Deploy FeeSplitterImmutable - Fully immutable, no owner, no configuration changes
- * 
+ *
  * IMPORTANT: Configuration is PERMANENT and CANNOT be changed after deployment!
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log("Deploying FeeSplitterImmutable with account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH");
+  console.log(
+    "Account balance:",
+    ethers.formatEther(await ethers.provider.getBalance(deployer.address)),
+    "ETH",
+  );
 
   // PRODUCTION CONFIGURATION (PERMANENT - CANNOT BE CHANGED!)
   const NICK = "0xf35B121bA32cBeaA27716abEfFb6B65a55f9B333";
@@ -17,14 +21,14 @@ async function main() {
   const SHARES = [1, 1]; // 50/50 split
 
   console.log("\n=== PERMANENT Configuration ===");
-  console.log("⚠️  WARNING: This configuration is IMMUTABLE and PERMANENT!");
+  console.log("WARNING: This configuration is IMMUTABLE and PERMANENT!");
   console.log("Nick:  ", NICK, "(50%)");
   console.log("Ignas: ", IGNAS, "(50%)");
   console.log("Shares:", SHARES);
 
   // Deploy
   const FeeSplitter = await ethers.getContractFactory("FeeSplitterImmutable");
-  
+
   console.log("\nDeploying immutable contract...");
   const splitter = await FeeSplitter.deploy(NICK, IGNAS, SHARES[0], SHARES[1]);
   await splitter.waitForDeployment();
@@ -42,7 +46,7 @@ async function main() {
   console.log("Nick's shares:", await splitter.shares(NICK));
   console.log("Ignas's shares:", await splitter.shares(IGNAS));
 
-  console.log("\n=== ⚠️  IMPORTANT ===");
+  console.log("\n=== IMPORTANT ===");
   console.log("This contract is FULLY IMMUTABLE:");
   console.log("- NO owner (no one can change anything)");
   console.log("- NO ability to change payees");
@@ -88,4 +92,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

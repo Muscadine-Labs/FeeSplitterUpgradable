@@ -23,10 +23,10 @@ describe("FeeSplitterImmutable", function () {
     // Deploy FeeSplitterImmutable with FIXED configuration
     const Splitter = await ethers.getContractFactory("FeeSplitterImmutable");
     splitter = await Splitter.deploy(
-      NICK_ADDRESS,   // payee1
-      IGNAS_ADDRESS,  // payee2
-      1,              // shares1 (50%)
-      1               // shares2 (50%)
+      NICK_ADDRESS, // payee1
+      IGNAS_ADDRESS, // payee2
+      1, // shares1 (50%)
+      1, // shares2 (50%)
     );
     await splitter.waitForDeployment();
 
@@ -35,7 +35,7 @@ describe("FeeSplitterImmutable", function () {
     usdc = await TokenFactory.deploy("USD Coin", "USDC", 6);
     cbbtc = await TokenFactory.deploy("Coinbase BTC", "cbBTC", 8);
     weth = await TokenFactory.deploy("Wrapped ETH", "WETH", 18);
-    
+
     const DeflFactory = await ethers.getContractFactory("DeflationaryMock");
     deflToken = await DeflFactory.deploy("Deflationary", "DEFL", 18);
   });
@@ -59,7 +59,7 @@ describe("FeeSplitterImmutable", function () {
   describe("ETH Distribution", function () {
     it("should split ETH 50/50", async function () {
       const amount = ethers.parseEther("10");
-      
+
       await deployer.sendTransaction({
         to: await splitter.getAddress(),
         value: amount,
@@ -71,7 +71,7 @@ describe("FeeSplitterImmutable", function () {
 
     it("should allow both payees to claim ETH", async function () {
       const amount = ethers.parseEther("10");
-      
+
       await deployer.sendTransaction({
         to: await splitter.getAddress(),
         value: amount,
@@ -80,7 +80,7 @@ describe("FeeSplitterImmutable", function () {
       // Impersonate payees
       await ethers.provider.send("hardhat_impersonateAccount", [NICK_ADDRESS]);
       await ethers.provider.send("hardhat_impersonateAccount", [IGNAS_ADDRESS]);
-      
+
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       const ignasSigner = await ethers.getSigner(IGNAS_ADDRESS);
 
@@ -100,38 +100,44 @@ describe("FeeSplitterImmutable", function () {
   describe("Vault Tokens", function () {
     it("should split USDC vault fees 50/50", async function () {
       const fees = ethers.parseUnits("1000", 6);
-      
+
       await usdc.mint(await deployer.getAddress(), fees);
       await usdc.transfer(await splitter.getAddress(), fees);
 
-      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("500", 6));
-      expect(await splitter.pendingToken(await usdc.getAddress(), IGNAS_ADDRESS))
-        .to.equal(ethers.parseUnits("500", 6));
+      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("500", 6),
+      );
+      expect(await splitter.pendingToken(await usdc.getAddress(), IGNAS_ADDRESS)).to.equal(
+        ethers.parseUnits("500", 6),
+      );
     });
 
     it("should split cbBTC vault fees 50/50", async function () {
       const fees = ethers.parseUnits("0.5", 8);
-      
+
       await cbbtc.mint(await deployer.getAddress(), fees);
       await cbbtc.transfer(await splitter.getAddress(), fees);
 
-      expect(await splitter.pendingToken(await cbbtc.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("0.25", 8));
-      expect(await splitter.pendingToken(await cbbtc.getAddress(), IGNAS_ADDRESS))
-        .to.equal(ethers.parseUnits("0.25", 8));
+      expect(await splitter.pendingToken(await cbbtc.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("0.25", 8),
+      );
+      expect(await splitter.pendingToken(await cbbtc.getAddress(), IGNAS_ADDRESS)).to.equal(
+        ethers.parseUnits("0.25", 8),
+      );
     });
 
     it("should split WETH vault fees 50/50", async function () {
       const fees = ethers.parseUnits("10", 18);
-      
+
       await weth.mint(await deployer.getAddress(), fees);
       await weth.transfer(await splitter.getAddress(), fees);
 
-      expect(await splitter.pendingToken(await weth.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("5", 18));
-      expect(await splitter.pendingToken(await weth.getAddress(), IGNAS_ADDRESS))
-        .to.equal(ethers.parseUnits("5", 18));
+      expect(await splitter.pendingToken(await weth.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("5", 18),
+      );
+      expect(await splitter.pendingToken(await weth.getAddress(), IGNAS_ADDRESS)).to.equal(
+        ethers.parseUnits("5", 18),
+      );
     });
 
     it("should handle all three vault tokens simultaneously", async function () {
@@ -145,12 +151,15 @@ describe("FeeSplitterImmutable", function () {
       await weth.transfer(await splitter.getAddress(), ethers.parseUnits("5", 18));
 
       // Verify all splits are 50/50
-      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("500", 6));
-      expect(await splitter.pendingToken(await cbbtc.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("0.05", 8));
-      expect(await splitter.pendingToken(await weth.getAddress(), NICK_ADDRESS))
-        .to.equal(ethers.parseUnits("2.5", 18));
+      expect(await splitter.pendingToken(await usdc.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("500", 6),
+      );
+      expect(await splitter.pendingToken(await cbbtc.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("0.05", 8),
+      );
+      expect(await splitter.pendingToken(await weth.getAddress(), NICK_ADDRESS)).to.equal(
+        ethers.parseUnits("2.5", 18),
+      );
     });
   });
 
@@ -160,7 +169,7 @@ describe("FeeSplitterImmutable", function () {
 
       await deflToken.mint(await deployer.getAddress(), amount);
       await deflToken.transfer(await splitter.getAddress(), amount);
-      
+
       const splitterBalance = await deflToken.balanceOf(await splitter.getAddress());
       expect(splitterBalance).to.equal(ethers.parseUnits("990", 18)); // 1% burned
 
@@ -170,7 +179,7 @@ describe("FeeSplitterImmutable", function () {
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
       await splitter.connect(nickSigner).releaseToken(await deflToken.getAddress(), NICK_ADDRESS);
-      
+
       const balance = await deflToken.balanceOf(NICK_ADDRESS);
       expect(balance).to.be.closeTo(ethers.parseUnits("490.05", 18), ethers.parseUnits("0.01", 18));
     });
@@ -199,7 +208,7 @@ describe("FeeSplitterImmutable", function () {
       });
 
       await expect(
-        splitter.connect(stranger).releaseETH(await stranger.getAddress())
+        splitter.connect(stranger).releaseETH(await stranger.getAddress()),
       ).to.be.revertedWith("not payee");
     });
   });
@@ -210,9 +219,9 @@ describe("FeeSplitterImmutable", function () {
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
-      await expect(
-        splitter.connect(nickSigner).releaseETH(NICK_ADDRESS)
-      ).to.be.revertedWith("nothing due");
+      await expect(splitter.connect(nickSigner).releaseETH(NICK_ADDRESS)).to.be.revertedWith(
+        "nothing due",
+      );
     });
 
     it("should handle multiple releases correctly", async function () {
@@ -237,4 +246,3 @@ describe("FeeSplitterImmutable", function () {
     });
   });
 });
-
