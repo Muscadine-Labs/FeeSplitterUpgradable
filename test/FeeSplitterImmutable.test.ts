@@ -209,7 +209,7 @@ describe("FeeSplitterImmutable", function () {
 
       await expect(
         splitter.connect(stranger).releaseETH(await stranger.getAddress()),
-      ).to.be.revertedWith("not payee");
+      ).to.be.revertedWithCustomError(splitter, 'NotPayee');
     });
   });
 
@@ -219,8 +219,8 @@ describe("FeeSplitterImmutable", function () {
       const nickSigner = await ethers.getSigner(NICK_ADDRESS);
       await deployer.sendTransaction({ to: NICK_ADDRESS, value: ethers.parseEther("1") });
 
-      await expect(splitter.connect(nickSigner).releaseETH(NICK_ADDRESS)).to.be.revertedWith(
-        "nothing due",
+      await expect(splitter.connect(nickSigner).releaseETH(NICK_ADDRESS)).to.be.revertedWithCustomError(
+        splitter, 'NothingDue'
       );
     });
 
